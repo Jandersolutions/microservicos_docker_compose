@@ -1,0 +1,36 @@
+ # Use a base image with Python and install necessary packages
+FROM python:3.8
+
+# Set environment variables for Django
+ENV PYTHONUNBUFFERED 1
+ENV DJANGO_SETTINGS_MODULE myapp.settings
+
+# Create and set the working directory
+WORKDIR /app
+
+# Copy the requirements file and install dependencies
+COPY django_app/requirements.txt /app/
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the Django application code into the container
+COPY django_app /app/
+
+# Install PostgreSQL client
+RUN apt-get update && apt-get install -y libpq-dev
+
+# Install and configure Redis
+RUN apt-get update && apt-get install -y redis-server
+
+# Copy PostgreSQL and Redis configuration files
+COPY postgres_config/pg_hba.conf /etc/postgresql/YOUR_PG_VERSION/main/pg_hba.conf
+COPY postgres_config/postgresql.conf /etc/postgresql/YOUR_PG_VERSION/main/postgresql.conf
+COPY redis_config/redis.conf /etc/redis/redis.conf
+
+# Expose ports for Django, PostgreSQL, and Redis
+EXPOSE 8000
+EXPOSE 5432
+EXPOSE 6379
+
+# Start PostgreSQL and Redis services
+CMD service postgresql start && service redis-server start && python manage.py runserver 0.0.0.0:8000
+
